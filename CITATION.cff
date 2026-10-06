@@ -8,7 +8,7 @@ authors:
 version: 1.0.0
 date-released: 2026-10-06
 license: GPL-2.0-or-later
-repository-code: "https://github.com/Knight60/geovanguard"
+repository-code: "https://github.com/Knight60/GeoVanguard"
 keywords:
   - topology
   - smoothing
