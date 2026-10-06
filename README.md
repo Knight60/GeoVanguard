@@ -15,6 +15,62 @@ GeoVanguard comes in two forms that share one engine and give bit-identical resu
 | **QGIS plugin** `geovanguard_qgis` | QGIS users (Processing Toolbox, models, batch) | QGIS *Plugins › Manage and Install Plugins* › "GeoVanguard" | QGIS 3.40+ or 4.x only |
 | **Python package** `geovanguard` | scripts, servers, pipelines | from this repository (`pip`/`conda` packages planned) | Python, numpy, GDAL, shapely ≥ 2 |
 
+## Installation
+
+### QGIS Plugin Installation
+
+Requires QGIS 3.40 LTR or 4.x (Windows, macOS or Linux); nothing else to install.
+
+**From the QGIS Plugin Manager** (after the plugin is published there)
+
+1. QGIS menu **Plugins › Manage and Install Plugins…**
+2. **All** › search for **GeoVanguard** › **Install Plugin**
+3. Open the **Processing Toolbox** (*Processing › Toolbox*, `Ctrl+Alt+T`) ›
+   **GeoVanguard › Smoothing Topology Preserver** › *Smooth Polygons* or
+   *Smooth Polygonization*.
+
+**From a ZIP file**
+
+1. Download `geovanguard_qgis-<version>.zip` from the
+   [latest release](https://github.com/Knight60/GeoVanguard/releases/latest) (do not unzip it).
+2. **Plugins › Manage and Install Plugins… › Install from ZIP** › choose the file ›
+   **Install Plugin**.
+3. Make sure **GeoVanguard** is ticked under **Installed**; the tools appear in the
+   Processing Toolbox as above.
+
+To update, install the newer ZIP (or use *Upgrade* in the Plugin Manager);
+restart QGIS afterwards.
+
+### Standalone Installation
+
+The `geovanguard` Python package runs the same engine without QGIS (scripts,
+servers, batch jobs). It needs Python ≥ 3.9 with **numpy**, **GDAL** (`osgeo`)
+and **shapely ≥ 2**; **scipy** is optional (B-Spline / Bezier). `pip` / `conda`
+packages are planned; until then use the source:
+
+**With conda (recommended — brings GDAL)**
+
+```bash
+conda create -n geovanguard -c conda-forge python=3.12 numpy gdal "shapely>=2" scipy
+conda activate geovanguard
+git clone https://github.com/Knight60/GeoVanguard.git
+cd GeoVanguard
+export PYTHONPATH="$PWD"            # Windows (cmd): set PYTHONPATH=%CD%
+python -c "import geovanguard; print(geovanguard.__version__)"
+```
+
+**With the Python that comes with QGIS** (Windows: *OSGeo4W Shell*, which already
+has numpy, GDAL and shapely)
+
+```bat
+git clone https://github.com/Knight60/GeoVanguard.git
+cd GeoVanguard
+set PYTHONPATH=%CD%
+python -c "import geovanguard; print(geovanguard.__version__)"
+```
+
+Then see [Standalone use](#standalone-use) below.
+
 ## Tools
 
 ### Smoothing Topology Preserver
@@ -70,30 +126,14 @@ full map gave 385,679 valid polygons (no repair needed) in 17.6 minutes with
 
 ## Workflow
 
-### Smooth Polygons
+*Smooth Polygonization* turns the classified raster into polygons and then runs
+**Smooth Polygons** on them. Colours: orange = input, purple = raster steps of
+Smooth Polygonization only, blue = the Smooth Polygons engine (the same in both
+tools), green = output.
 
-```mermaid
-flowchart TD
-    A["Polygon layer<br/>(no overlaps)"] --> B["Load and quantise<br/>tiles + work folder (checkpoints)"]
-    B --> C["Find the shared borders<br/>each edge gets its left / right polygon (LPoly / RPoly);<br/>missing junction vertices are added"]
-    C --> D["Join edges into arcs<br/>each border between two neighbours is stored once"]
-    D --> E["Smooth every arc once<br/>Gaussian · Chaikin · B-Spline · Bezier · Douglas-Peucker<br/>(parallel worker processes)"]
-    E --> F["Rebuild every polygon from its own arcs<br/>neighbours use the same smoothed border"]
-    F --> G{"Valid?"}
-    G -- yes --> H["Smoothed polygons<br/>(attributes kept)"]
-    G -- "no" --> R["Repair only the problem spot<br/>smooth more gently there, keep the rest"]
-    R --> F
-```
+<p align="center"><img src="docs/images/workflow.png" alt="Workflow of Smooth Polygons and Smooth Polygonization" width="820"></p>
 
-### Smooth Polygonization
-
-```mermaid
-flowchart TD
-    A["Classified raster<br/>(integer classes)"] --> S["Remove small patches<br/>GDAL Sieve (optional)"]
-    S --> P["Pixels to polygons<br/>GDAL Polygonize"]
-    P --> B["Same engine as Smooth Polygons<br/>shared borders → smooth once → rebuild → repair"]
-    B --> H["Smoothed polygons<br/>field class_value; nodata stays empty"]
-```
+Drawn by [tools/make_workflow_image.py](tools/make_workflow_image.py).
 
 ## How it works
 
