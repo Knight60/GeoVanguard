@@ -36,25 +36,105 @@ Douglas-Peucker. Defaults suit 10 m Sentinel-2 maps; distances are in meters.
 Developed by **Pisut Nakmuenwai** · License: [GPL-2.0-or-later](LICENSE) ·
 cite with [CITATION.cff](CITATION.cff).
 
-## How it works (LPoly/RPoly)
+## Screenshot
 
-Diagram: [WorkFlow.svg](WorkFlow.svg) (source: [WorkFlow.mmd](WorkFlow.mmd)).
+Processing Toolbox › **GeoVanguard › Smoothing Topology Preserver**, and the
+*Smooth Polygonization* dialog. The work folder is filled in from the output name;
+the help panel shows the workflow of the tool. While a job runs, a **Pause /
+Resume** button appears next to *Cancel*.
 
-1. Polygons are stored in an on-disk work database with a global `poly_id`.
-2. Tile by tile, every boundary edge is matched with its reverse edge → each edge
-   knows its left (LPoly) and right (RPoly) polygon. Missing junction vertices
-   (GDAL does not put a vertex where three polygons meet on a straight edge) are
-   inserted first.
-3. Edges with the same LPoly/RPoly are joined into arcs; each shared arc is stored once.
-4. Every arc is smoothed exactly once (Gaussian / Chaikin / B-Spline / Bezier / Douglas-Peucker).
-5. Each polygon is rebuilt from its own arcs (forward if LPoly, reversed if RPoly),
-   so neighbours always share identical boundaries.
-6. Any polygon that would become invalid gets its arcs re-smoothed more gently
-   around the conflicts, or reverted, and its neighbours are rebuilt.
+<p align="center"><img src="docs/images/toolbox_dialog.png" alt="Processing Toolbox and the Smooth Polygonization dialog" width="900"></p>
 
-Large data: memory is bounded by the tile size; every stage checkpoints to the
-work folder, so an interrupted run resumes, and changing only the smoothing
-settings re-uses the topology.
+## Examples
+
+### Single class — Green Area Detection
+
+Polygons of a Green Area Detection result (10 m pixels, outer boundaries and
+holes). Left: the input with its pixel staircase; middle: smoothed with the
+defaults (Gaussian, sigma 12.5 m); right: the smoothed borders drawn over the
+input — the outer edges and the holes are smoothed alike and the total area is
+preserved.
+
+<p align="center"><img src="docs/images/case_single_class.png" alt="Green Area Detection: input, smoothed output and overlay" width="900"></p>
+
+### Multiple classes — Forest Type
+
+*Smooth Polygonization* of a forest-type classification (raster 28,286 × 16,911
+pixels, 10 m). Left: the classified raster; middle: the smoothed polygons;
+right: the smoothed borders over the raster. Every border between two classes is
+one shared line, so the classes stay exactly joined — no gaps, no overlaps. The
+full map gave 385,679 valid polygons (no repair needed) in 17.6 minutes with
+7 worker processes on a 12-core PC.
+
+<p align="center"><img src="docs/images/case_multi_class.png" alt="Forest Type: classified raster, smoothed polygons and overlay" width="900"></p>
+
+## Workflow
+
+### Smooth Polygons
+
+```mermaid
+flowchart TD
+    A["Polygon layer<br/>(no overlaps)"] --> B["Load and quantise<br/>tiles + work folder (checkpoints)"]
+    B --> C["Find the shared borders<br/>each edge gets its left / right polygon (LPoly / RPoly);<br/>missing junction vertices are added"]
+    C --> D["Join edges into arcs<br/>each border between two neighbours is stored once"]
+    D --> E["Smooth every arc once<br/>Gaussian · Chaikin · B-Spline · Bezier · Douglas-Peucker<br/>(parallel worker processes)"]
+    E --> F["Rebuild every polygon from its own arcs<br/>neighbours use the same smoothed border"]
+    F --> G{"Valid?"}
+    G -- yes --> H["Smoothed polygons<br/>(attributes kept)"]
+    G -- "no" --> R["Repair only the problem spot<br/>smooth more gently there, keep the rest"]
+    R --> F
+```
+
+### Smooth Polygonization
+
+```mermaid
+flowchart TD
+    A["Classified raster<br/>(integer classes)"] --> S["Remove small patches<br/>GDAL Sieve (optional)"]
+    S --> P["Pixels to polygons<br/>GDAL Polygonize"]
+    P --> B["Same engine as Smooth Polygons<br/>shared borders → smooth once → rebuild → repair"]
+    B --> H["Smoothed polygons<br/>field class_value; nodata stays empty"]
+```
+
+## How it works
+
+1. **Shared borders, stored once.** Polygons go into an on-disk work database
+   (SQLite) with a global `poly_id`. Tile by tile, every boundary edge is matched
+   with its reverse edge, so each edge knows the polygon on its left (LPoly) and
+   on its right (RPoly). Junction vertices that GDAL leaves out (where three
+   polygons meet on a straight edge) are inserted first. Edges with the same
+   LPoly/RPoly are joined into *arcs*: one arc per border between two neighbours.
+2. **Smooth each arc once.** Every arc is smoothed exactly once, so the two
+   polygons on either side receive the same new line. The Gaussian method
+   corrects the area of closed rings; arcs at the raster edge can stay straight.
+3. **Rebuild from arcs.** Each polygon is rebuilt by walking its arcs (forward
+   where it is the LPoly, reversed where it is the RPoly). Holes and outer
+   boundaries are handled the same way.
+4. **Local repair.** If a rebuilt polygon would be invalid (a smoothed arc
+   crossing another), only a window around the crossing is smoothed more gently;
+   the rest keeps the full smoothing. The neighbours are rebuilt with the same line.
+5. **Large data.** Memory is bounded by the tile size; the tile and batch stages
+   run in parallel worker processes (by default 50–75 % of the idle CPU cores),
+   with results bit-identical to a single-process run. Every stage checkpoints
+   to the work folder: a cancelled run resumes, changing only the smoothing
+   settings re-uses the topology, and **Pause / Resume** frees the CPU of a
+   multi-day job for a while.
+
+Diagram of the full pipeline: [WorkFlow.svg](WorkFlow.svg) (source: [WorkFlow.mmd](WorkFlow.mmd)).
+
+## Comparison with other tools
+
+| | QGIS *Smooth* | GRASS *v.generalize* | Mapshaper | ArcGIS Pro *Smooth Shared Edges* | **GeoVanguard** |
+| --- | --- | --- | --- | --- | --- |
+| Shared borders between neighbours | each feature smoothed on its own → gaps / overlaps between neighbours | shared boundaries of the GRASS topological vector model | shared arcs | shared edges | shared arcs (LPoly/RPoly), stored once |
+| Curve smoothing | Chaikin-type smoothing | several smoothing and simplification algorithms | simplification only (no curve smoothing) | PAEK / Bezier smoothing | Gaussian (area-corrected), Chaikin, B-Spline, Bezier; Douglas-Peucker |
+| Workflow | any QGIS layer | data imported into a GRASS database and exported again | command line / web, data in memory | commercial licence | QGIS layers and files directly; raster → smooth polygons in one tool |
+| Resume after an interruption, pause / resume | no | no | no | no | yes — tiles + on-disk work folder, parallel worker processes |
+| Polygons that would become invalid | — | — | — | — | repaired locally, neighbours rebuilt with the same line |
+
+GRASS *v.generalize* is the closest open-source equivalent; GeoVanguard adds a
+one-step raster workflow, area-corrected Gaussian smoothing, local repair and the
+large-data machinery (tiles, parallel workers, checkpoints, pause / resume), and
+needs nothing beyond QGIS. "—": not compared here; see each tool's documentation.
 
 ## Standalone use
 
