@@ -17,4 +17,4 @@ changelog=1.0.0 First public release: Smoothing Topology Preserver (Smooth Polyg
 experimental=False
 deprecated=False
 hasProcessingProvider=yes
-icon=GeoVangard-Logo-Mini.png
+icon=GeoVanguard-Logo-Mini.png

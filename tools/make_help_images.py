@@ -125,7 +125,7 @@ def render_png(svg_path, png_path, scale=2):
     assert img.save(png_path), png_path
 
 
-LOGO = os.path.join(ROOT, 'logo', 'GeoVangard-Logo-Full.png')
+LOGO = os.path.join(ROOT, 'logo', 'GeoVanguard-Logo-Full.png')
 LOGO_W = 240          # display width of the logo at the top of the help panel
 
 

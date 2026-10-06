@@ -1,4 +1,4 @@
-<p align="center"><img src="logo/GeoVangard-Logo-Full.png" alt="GeoVanguard" width="420"></p>
+<p align="center"><img src="logo/GeoVanguard-Logo-Full.png" alt="GeoVanguard" width="420"></p>
 
 # GeoVanguard
 

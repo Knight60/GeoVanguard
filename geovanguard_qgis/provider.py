@@ -25,5 +25,5 @@ class GeoVanguardProvider(QgsProcessingProvider):
         return 'GeoVanguard — efficient open-source tools for large, complex RS/GIS data'
 
     def icon(self):
-        path = os.path.join(os.path.dirname(__file__), 'GeoVangard-Logo-Mini.png')
+        path = os.path.join(os.path.dirname(__file__), 'GeoVanguard-Logo-Mini.png')
         return QIcon(path) if os.path.exists(path) else QgsProcessingProvider.icon(self)
