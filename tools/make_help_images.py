@@ -133,6 +133,9 @@ def logo_pngs():
     """help/logo.png (LOGO_W px wide) and help/logo@2x.png, smoothly down-scaled."""
     from qgis.PyQt.QtCore import Qt
     from qgis.PyQt.QtGui import QImage
+    if not os.path.exists(LOGO):
+        print('logo source not found (kept the existing help/logo.png):', LOGO)
+        return
     img = QImage(LOGO)
     assert not img.isNull(), LOGO
     aspect = getattr(Qt, 'KeepAspectRatio', None) or Qt.AspectRatioMode.KeepAspectRatio

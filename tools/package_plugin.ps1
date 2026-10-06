@@ -26,6 +26,7 @@ function Copy-Tree($from, $to) {
     Get-ChildItem $from -Force | ForEach-Object {
         if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) { return }
         if ($_.Name -eq '__pycache__' -or $_.Extension -eq '.pyc') { return }
+        if ($_.Extension -eq '.svg' -and (Split-Path -Leaf $from) -eq 'help') { return }
         $target = Join-Path $to $_.Name
         if ($_.PSIsContainer) {
             New-Item -ItemType Directory -Force $target | Out-Null
