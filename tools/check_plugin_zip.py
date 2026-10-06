@@ -27,6 +27,11 @@ def main(path):
     if size > MAX_BYTES:
         errors.append('ZIP is {:.1f} MB (> 25 MB)'.format(size / 1048576.0))
     z = zipfile.ZipFile(path)
+    # Python on Windows turns "\\" into "/" when reading; check the raw names
+    backslash = [i.orig_filename for i in z.infolist() if chr(92) in i.orig_filename]
+    if backslash:
+        errors.append('entry names contain backslashes (not allowed by the ZIP '
+                      'specification), e.g. {!r}'.format(backslash[0]))
     names = [n for n in z.namelist() if not n.endswith('/')]
     tops = {n.split('/')[0] for n in z.namelist()}
     if len(tops) != 1:

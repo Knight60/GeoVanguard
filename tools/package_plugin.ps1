@@ -45,6 +45,18 @@ if (Test-Path $license) { Copy-Item $license (Join-Path $out 'LICENSE') }
 
 $zip = Join-Path $dist "$name-$version.zip"
 if (Test-Path $zip) { Remove-Item $zip -Confirm:$false }
-Compress-Archive -Path $out -DestinationPath $zip
+# Compress-Archive (PowerShell 5.1) writes "\" into entry names, which breaks the ZIP
+# specification (plugins.qgis.org rejects it): add the entries ourselves with "/"
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+$archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
+try {
+    Get-ChildItem $out -Recurse -File | Sort-Object FullName | ForEach-Object {
+        $entry = $_.FullName.Substring($stage.Length + 1).Replace([string][char]92, '/')
+        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $archive, $_.FullName, $entry, [IO.Compression.CompressionLevel]::Optimal)
+    }
+} finally {
+    $archive.Dispose()
+}
 Remove-Item -Recurse -Force $stage -Confirm:$false
 Write-Host "Built $zip"
