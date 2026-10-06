@@ -26,7 +26,7 @@ from . import parallel, stages, workers
 from .backends import get_backend
 from .core import geom, topology
 from .progress import PIPELINE_STEPS, StepTracker, fmt_duration
-from .core.store import (ARC_FALLBACK, ARC_FALLBACK2, ARC_ORIGINAL, ARC_PENDING,
+from .core.store import (id_list, ARC_FALLBACK, ARC_FALLBACK2, ARC_ORIGINAL, ARC_PENDING,
                          ARC_REVERTED, ARC_SMOOTHED,
                          RES_INVALID, RES_OK, RES_ORIGINAL, RES_WALK_FAILED, WorkStore)
 
@@ -310,9 +310,13 @@ class SmoothPipeline(object):
             return []
         return list(self.store.fetch_geoms(ids))
 
+    _PENDING_SQL = {
+        'ins_done': 'SELECT tile FROM tiles WHERE ins_done=0 ORDER BY tile',
+        'lab_done': 'SELECT tile FROM tiles WHERE lab_done=0 ORDER BY tile',
+    }
+
     def _pending_tiles(self, column):
-        return [r[0] for r in self.con.execute(
-            'SELECT tile FROM tiles WHERE {}=0 ORDER BY tile'.format(column))]
+        return [r[0] for r in self.con.execute(self._PENDING_SQL[column])]
 
     # ── S2a junction insertion ───────────────────────────────────────────────
     def insert_junctions(self):
@@ -345,11 +349,11 @@ class SmoothPipeline(object):
         def tasks():
             for k in range(0, len(pids), DENSIFY_BATCH):
                 batch = pids[k:k + DENSIFY_BATCH]
-                marks = ','.join('?' * len(batch))
                 ins = {}
                 for pid, ring, seg, t, x, y in self.con.execute(
-                        'SELECT poly_id, ring, seg, t, x, y FROM ins WHERE poly_id IN ({})'.format(
-                            marks), batch):
+                        'SELECT poly_id, ring, seg, t, x, y FROM ins '
+                        'WHERE poly_id IN (SELECT value FROM json_each(?)) '
+                        'ORDER BY poly_id, rowid', (id_list(batch),)):
                     ins.setdefault(pid, {}).setdefault(ring, []).append((seg, t, x, y))
                 yield ([(pid, blob, ins.get(pid, {})) for pid, blob in st.fetch_geoms(batch)],)
 
@@ -403,8 +407,8 @@ class SmoothPipeline(object):
         self.con.execute(
             'INSERT INTO arcs(lpoly, rpoly, fixed, closed, coords, smooth, state) '
             'SELECT lpoly, rpoly, fixed, closed, coords, NULL, '
-            'CASE WHEN fixed=1 THEN {} ELSE {} END FROM pieces '
-            'WHERE cut_s=0 AND cut_e=0 ORDER BY piece_id'.format(ARC_ORIGINAL, ARC_PENDING))
+            'CASE WHEN fixed=1 THEN ? ELSE ? END FROM pieces '
+            'WHERE cut_s=0 AND cut_e=0 ORDER BY piece_id', (ARC_ORIGINAL, ARC_PENDING))
         metas = self.con.execute(
             'SELECT piece_id, lpoly, rpoly, fixed, ring, start, end_, nseg, cut_s, cut_e '
             'FROM pieces WHERE cut_s=1 OR cut_e=1').fetchall()
@@ -413,10 +417,9 @@ class SmoothPipeline(object):
         for k, (chain, closed) in enumerate(chains):
             if k % 2000 == 0:
                 self._check()
-            marks = ','.join('?' * len(chain))
             rows = dict((r[0], r[1:]) for r in self.con.execute(
-                'SELECT piece_id, lpoly, rpoly, fixed, coords FROM pieces WHERE piece_id IN ({})'.format(
-                    marks), chain))
+                'SELECT piece_id, lpoly, rpoly, fixed, coords FROM pieces '
+                'WHERE piece_id IN (SELECT value FROM json_each(?))', (id_list(chain),)))
             parts = [geom.decode_coords(rows[p][3]) for p in chain]
             coords = topology.join_coords(parts)
             if closed:
@@ -462,14 +465,24 @@ class SmoothPipeline(object):
         st.mark_done('smooth')
 
     # ── S5 reconstruct ───────────────────────────────────────────────────────
-    def _arcs_for(self, where_l, where_r, args):
-        """Arcs whose lpoly or rpoly matches; each arc once (an arc whose two
-        sides both match would otherwise be returned by both queries)."""
+    _ARCS_SQL = {
+        'range': ('SELECT arc_id, lpoly, rpoly, coords, smooth, state FROM arcs '
+                  'WHERE lpoly >= ? AND lpoly < ? ORDER BY lpoly, arc_id',
+                  'SELECT arc_id, lpoly, rpoly, coords, smooth, state FROM arcs '
+                  'WHERE rpoly >= ? AND rpoly < ? ORDER BY rpoly, arc_id'),
+        'ids': ('SELECT arc_id, lpoly, rpoly, coords, smooth, state FROM arcs '
+                'WHERE lpoly IN (SELECT value FROM json_each(?)) ORDER BY lpoly, arc_id',
+                'SELECT arc_id, lpoly, rpoly, coords, smooth, state FROM arcs '
+                'WHERE rpoly IN (SELECT value FROM json_each(?)) ORDER BY rpoly, arc_id'),
+    }
+
+    def _arcs_for(self, kind, args):
+        """Arcs whose lpoly or rpoly is in a poly_id range (``kind`` 'range',
+        args (lo, hi)) or in a list (``kind`` 'ids', args (id_list,)); each arc
+        once (an arc whose two sides both match is returned by both queries)."""
         rows = {}
-        for where in (where_l, where_r):
-            for r in self.con.execute(
-                    'SELECT arc_id, lpoly, rpoly, coords, smooth, state FROM arcs WHERE ' + where,
-                    args):
+        for sql in self._ARCS_SQL[kind]:
+            for r in self.con.execute(sql, args):
                 rows[r[0]] = r[1:]
         return list(rows.values())
 
@@ -483,7 +496,7 @@ class SmoothPipeline(object):
         def tasks():
             for a in range(upto + 1, max_pid + 1, RECON_BATCH):
                 b = a + RECON_BATCH
-                rows = self._arcs_for('lpoly >= ? AND lpoly < ?', 'rpoly >= ? AND rpoly < ?', (a, b))
+                rows = self._arcs_for('range', (a, b))
                 pids = [r[0] for r in self.con.execute(
                     'SELECT poly_id FROM polys WHERE poly_id >= ? AND poly_id < ?', (a, b))]
                 yield rows, pids, self.g, a, b, self.origin
@@ -506,8 +519,7 @@ class SmoothPipeline(object):
         wanted = set(pids)
         for k in range(0, len(pids), 400):
             part = pids[k:k + 400]
-            marks = ','.join('?' * len(part))
-            rows = self._arcs_for('lpoly IN ({})'.format(marks), 'rpoly IN ({})'.format(marks), part)
+            rows = self._arcs_for('ids', (id_list(part),))
             by_pid = stages.group_arcs(rows, self.g, wanted=wanted)
             res = stages.rebuild(part, by_pid, self.origin, self.backend)
             self.con.executemany('INSERT OR REPLACE INTO result(poly_id, status, wkb) VALUES (?,?,?)',

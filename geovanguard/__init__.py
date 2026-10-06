@@ -11,7 +11,7 @@ neighbouring polygons never get gaps or overlaps.  Works on large data (tiles
 The same engine runs inside the GeoVanguard QGIS plugin.
 Developed by Pisut Nakmuenwai.
 """
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __all__ = ['smooth_polygons', 'smooth_polygonization', '__version__']
 
 

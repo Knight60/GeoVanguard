@@ -205,6 +205,8 @@ Progress on the console: pass `feedback=geovanguard.feedback.ConsoleFeedback()`.
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\install_plugin.ps1   # junctions into QGIS 3 + 4 profiles
 powershell -ExecutionPolicy Bypass -File tools\package_plugin.ps1   # dist\geovanguard_qgis-<version>.zip
+python-qgis.bat tools\check_plugin_zip.py dist\geovanguard_qgis-<version>.zip  # ZIP / metadata rules
+python-qgis.bat tools\scan_plugin.py dist\geovanguard_qgis-<version>.zip --bandit <bandit.exe>  # Bandit + Qt6 check (as plugins.qgis.org)
 ```
 
 The plugin imports the engine from its sub-folder `geovanguard_qgis/geovanguard`,

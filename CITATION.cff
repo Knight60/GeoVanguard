@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: Nakmuenwai
     given-names: Pisut
-version: 1.0.0
+version: 1.0.1
 date-released: 2026-10-06
 license: GPL-2.0-or-later
 repository-code: "https://github.com/Knight60/GeoVanguard"

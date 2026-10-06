@@ -11,7 +11,7 @@ output name (Forest.gpkg → Forest) unless the user typed a folder of their own
 and in the help panel puts the GeoVanguard logo above the centred tool title.
 Anything it cannot find is left as QGIS built it.
 """
-from qgis.core import QgsProcessingContext
+from qgis.core import Qgis, QgsMessageLog, QgsProcessingContext
 from qgis.PyQt.QtCore import Qt, QTimer
 from qgis.PyQt.QtGui import QTextBlockFormat, QTextCharFormat, QTextCursor
 from qgis.PyQt import sip
@@ -71,8 +71,9 @@ class SmoothingMethodWrapper(WidgetWrapper):
             try:
                 self._arrange()
                 self._link_work_folder()
-            except Exception:                   # noqa: BLE001 — layout is cosmetic
-                pass
+            except Exception as err:            # noqa: BLE001 — layout is cosmetic
+                QgsMessageLog.logMessage('Dialog layout left as QGIS built it: {}'.format(err),
+                                         'GeoVanguard', Qgis.MessageLevel.Info)
             # the help text is set by the dialog; decorate it once the dialog is built
             QTimer.singleShot(0, self._decorate_help)
 

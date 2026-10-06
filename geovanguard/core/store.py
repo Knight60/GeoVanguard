@@ -20,6 +20,12 @@ import json
 import os
 import sqlite3
 
+
+def id_list(ids):
+    """One SQL parameter holding a list of integer ids, for
+    ``… IN (SELECT value FROM json_each(?))`` — the SQL text stays constant."""
+    return json.dumps([int(i) for i in ids])
+
 ARC_PENDING = 0      # not smoothed yet
 ARC_SMOOTHED = 1     # smooth blob holds the smoothed geometry
 ARC_ORIGINAL = 2     # kept original geometry (fixed arc or smoothing unusable)
@@ -162,16 +168,11 @@ class WorkStore(object):
                    'AND maxy >= ? AND miny <= ?')
         return [r[0] for r in self.con.execute(sql, (xmin, xmax, ymin, ymax))]
 
-    def fetch_geoms(self, ids, chunk=900):
-        ids = sorted(ids)
-        out = []
-        for i in range(0, len(ids), chunk):
-            part = ids[i:i + chunk]
-            sql = 'SELECT poly_id, geom FROM polys WHERE poly_id IN ({})'.format(
-                ','.join('?' * len(part)))
-            out.extend(self.con.execute(sql, part).fetchall())
-        out.sort()
-        return out
+    def fetch_geoms(self, ids):
+        """[(poly_id, geom_blob)] for ``ids``, ordered by poly_id."""
+        return self.con.execute(
+            'SELECT poly_id, geom FROM polys WHERE poly_id IN (SELECT value FROM json_each(?)) '
+            'ORDER BY poly_id', (id_list(ids),)).fetchall()
 
     def poly_count(self):
         return self.con.execute('SELECT COUNT(*) FROM polys').fetchone()[0]

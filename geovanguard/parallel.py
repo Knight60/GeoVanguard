@@ -251,8 +251,8 @@ class Pool(object):
                 for proc in list(getattr(self.executor, '_processes', {}).values()):
                     try:
                         proc.kill()
-                    except Exception:            # noqa: BLE001 — already gone
-                        pass
+                    except (OSError, ValueError):  # the process has already ended
+                        continue
             try:
                 self.executor.shutdown(wait=not abort, cancel_futures=True)
             except TypeError:                    # Python < 3.9
