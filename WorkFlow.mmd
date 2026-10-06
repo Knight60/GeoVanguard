@@ -1,0 +1,44 @@
+---
+title: GeoVanguard — Smoothing Topology Preserver workflow (LPoly/RPoly)
+---
+flowchart TD
+    classDef input fill:#e8f1fb,stroke:#3b6ea5,color:#1b3550
+    classDef stage fill:#fff7e6,stroke:#c58a1b,color:#4a3305
+    classDef core fill:#fdecee,stroke:#c0392b,color:#5a1710
+    classDef store fill:#eef7ee,stroke:#3c8d40,color:#1d421f
+    classDef output fill:#f1ecfa,stroke:#6c4fa3,color:#2f2147
+
+    subgraph IN["Inputs"]
+        A["<b>Tool A</b> · Smooth Polygons<br/>polygon coverage (vector)"]:::input
+        B["<b>Tool B</b> · Smooth Polygonization<br/>classified raster (e.g. Sentinel-2, 10 m)"]:::input
+    end
+
+    B --> S0a["GDAL SieveFilter (optional)<br/>remove regions &lt; N pixels"]:::stage
+    S0a --> S0b["GDAL Polygonize<br/>4/8-connected, nodata stays empty"]:::stage
+
+    A --> U
+    S0b --> U
+    U["Distance units<br/>meters → layer CRS units<br/>(geographic CRS: m/° at data centre)"]:::stage
+
+    U --> S1["<b>S1 Load</b><br/>global poly_id · quantise to precision grid<br/>orient rings: shell CCW, hole CW (body on the LEFT)"]:::stage
+    S1 --> S2a["<b>S2a Junction insertion</b> (per tile)<br/>insert neighbour vertices lying on an edge<br/>(GDAL omits vertices where 3 polygons meet)"]:::stage
+    S2a --> S2b["<b>S2b Densify</b><br/>apply insertions → neighbours share identical vertices"]:::stage
+    S2b --> S2c["<b>S2c LPoly/RPoly labelling</b> (per tile)<br/>edge p→q of A: RPoly = owner of q→p, else 0<br/>emit shared edge once (lpoly &lt; rpoly) · split where RPoly changes"]:::core
+    S2c --> S3["<b>S3 Merge</b><br/>re-join arc pieces cut by tile edges<br/>closed arcs → canonical start vertex"]:::stage
+    S3 --> S4["<b>S4 Smooth every arc once</b><br/>default: Gaussian sliding average (sigma ≈ 1.25 pixel)<br/>(or Chaikin / B-Spline / Bezier / Douglas-Peucker)<br/>arc nodes fixed · raster-extent arcs kept straight<br/>self-crossing → gentle smoothing only around the crossing"]:::core
+    S4 --> S5["<b>S5 Reconstruct</b> (per poly_id batch)<br/>arcs: forward if LPoly, reversed if RPoly<br/>face walk (first arc clockwise at nodes) · split self-touching rings"]:::core
+    S5 --> V{"valid polygon?<br/>(GEOS)"}
+    V -- yes --> S7
+    V -- no --> S6["<b>S6 Repair</b><br/>find where arcs of the polygon cross/touch<br/>smooth gently only in windows around those points<br/>(windows grow each round) → then whole arc:<br/>half strength → corner cutting → original<br/>rebuild the polygon and its neighbours"]:::core
+    S6 --> S5
+
+    S7["<b>S7 Output</b>"]:::output
+    S7 --> O1["Smoothed polygons<br/>(Tool A: attributes 1:1 · Tool B: class_value)"]:::output
+    S7 --> O2["Topology arcs (optional)<br/>arc_id · lpoly_id · rpoly_id · smoothed"]:::output
+
+    DB[("Work DB (sqlite)<br/>polys · tiles · ins · pieces · arcs · result<br/>checkpoint per tile / batch")]:::store
+    S1 -.-> DB
+    S2c -.-> DB
+    S4 -.-> DB
+    S5 -.-> DB
+    DB -. "resume after cancel ·<br/>new smoothing settings reuse S1–S3" .-> S4

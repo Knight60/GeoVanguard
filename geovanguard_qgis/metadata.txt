@@ -1,0 +1,20 @@
+[general]
+name=GeoVanguard
+qgisMinimumVersion=3.40
+qgisMaximumVersion=4.99
+supportsQt6=True
+description=Open-source tools for large, complex remote-sensing and GIS data in QGIS — including smoothing of polygon maps and classified rasters (e.g. Sentinel-2 land cover) without gaps or overlaps between neighbouring polygons.
+about=GeoVanguard helps you process large, complex remote-sensing (RS) and GIS data in QGIS. It combines proven open-source components — QGIS, GDAL/OGR, GEOS, NumPy and SQLite — into efficient workflows that scale to very large datasets: the work is split into tiles and shared across your CPU cores, it can be paused and resumed, and an interrupted run continues where it stopped. Tools (Processing Toolbox › GeoVanguard › Smoothing Topology Preserver): Smooth Polygons smooths the outlines of an existing polygon map, such as land cover or forest types; Smooth Polygonization turns a classified raster into smooth polygons in one step. Neighbouring polygons share each smoothed border, so no gaps or overlaps appear, holes are smoothed like outer edges and areas are preserved — also for maps with hundreds of thousands of polygons. Choose Gaussian (recommended), Chaikin, B-Spline, Bezier or Douglas-Peucker smoothing; the defaults suit 10 m Sentinel-2 maps, with distances in meters. GeoVanguard needs nothing besides QGIS; the same engine is also available without QGIS as the Python package "geovanguard". Developed by Pisut Nakmuenwai. License: GPL-2.0-or-later.
+version=1.0.0
+author=Pisut Nakmuenwai
+email=pisut.nak@pisut.org
+category=Analysis
+tags=smooth,smoothing,topology,polygon,coverage,polygonize,vectorize,raster,generalization,processing,land cover,classification,sentinel-2,remote sensing,large data,parallel
+homepage=https://github.com/Knight60/geovanguard
+repository=https://github.com/Knight60/geovanguard
+tracker=https://github.com/Knight60/geovanguard/issues
+changelog=1.0.0 First public release: Smoothing Topology Preserver (Smooth Polygons, Smooth Polygonization) with Gaussian, Chaikin, B-Spline, Bezier and Douglas-Peucker smoothing; localized repair; parallel worker processes (automatic core count); Pause / Resume button; tiles and a resumable work folder; automatic GeoPackage output for large jobs; QGIS 3.40 LTR and 4.x.
+experimental=False
+deprecated=False
+hasProcessingProvider=yes
+icon=GeoVangard-Logo-Mini.png

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+dist/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+# development junction to ../geovanguard (the released plugin ZIP holds a copy)
+geovanguard_qgis/geovanguard

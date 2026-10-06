@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use GeoVanguard, please cite it as below."
+title: "GeoVanguard: topology-preserving smoothing of polygon coverages (QGIS plugin and Python package)"
+type: software
+authors:
+  - family-names: Nakmuenwai
+    given-names: Pisut
+version: 1.0.0
+date-released: 2026-10-06
+license: GPL-2.0-or-later
+repository-code: "https://github.com/Knight60/geovanguard"
+keywords:
+  - topology
+  - smoothing
+  - polygon coverage
+  - polygonization
+  - QGIS
+  - Sentinel-2
