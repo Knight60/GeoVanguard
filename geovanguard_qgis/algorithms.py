@@ -57,7 +57,8 @@ DEFAULT_SIGMA = DEFAULTS['sigma']
 # (no spatial index, everything in RAM) and is lost when QGIS closes.
 LARGE_OUTPUT_FEATURES = 50000
 LARGE_RASTER_PIXELS = 10000000
-HELP_URL = 'https://github.com/Knight60/geovanguard#readme'
+# Help button → this toolset's section of the README in the public repository
+HELP_URL = 'https://github.com/Knight60/geovanguard#smoothing-topology-preserver'
 CREDIT = '\n\n<i>GeoVanguard — developed by Pisut Nakmuenwai</i>'
 
 TOO_LARGE = (
