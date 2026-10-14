@@ -20,8 +20,15 @@ jobs:
       - uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: gv
-          create-args: python=${{ matrix.python }} numpy gdal "shapely>=2" scipy
-          channels: conda-forge
+          create-args: >-
+            python=${{ matrix.python }}
+            numpy
+            gdal
+            shapely>=2
+            scipy
+          condarc: |
+            channels:
+              - conda-forge
       - name: Core tests (numpy only)
         run: python tests/test_core.py
       - name: Standalone engine on synthetic data (no QGIS)
