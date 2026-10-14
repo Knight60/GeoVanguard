@@ -5,8 +5,10 @@ type: software
 authors:
   - family-names: Nakmuenwai
     given-names: Pisut
-version: 1.0.1
-date-released: 2026-10-06
+    orcid: "https://orcid.org/0009-0007-5359-2838"
+    affiliation: "Mahidol University"
+version: 1.0.2
+date-released: 2026-10-14
 license: GPL-2.0-or-later
 repository-code: "https://github.com/Knight60/GeoVanguard"
 keywords:

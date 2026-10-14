@@ -1,0 +1,31 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  standalone:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.9', '3.12']
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: gv
+          create-args: python=${{ matrix.python }} numpy gdal "shapely>=2" scipy
+          channels: conda-forge
+      - name: Core tests (numpy only)
+        run: python tests/test_core.py
+      - name: Standalone engine on synthetic data (no QGIS)
+        run: |
+          cd tests
+          python standalone_hashes.py standalone.json
+          python standalone_hashes.py standalone_4w.json --workers 4 --compare standalone.json
