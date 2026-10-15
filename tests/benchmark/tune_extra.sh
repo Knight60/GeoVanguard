@@ -8,6 +8,8 @@ mul() { python -c "import sys; v=float(sys.argv[1])*float(sys.argv[2]); print(('
 for ds in syn_multi_A syn_single_A ft_multi_A ga_single_A; do
   px=$(python -c "import json;print(json.load(open('$D/datasets.json'))['$ds']['input_px'])")
   RUNS=""
+  # GeoVanguard sigma 0.25 and 0.35 px: run separately on 2026-10-11 (22:08), added here for reproducibility
+  for f in 0.25 0.35; do RUNS="$RUNS gv_gaussian:$(mul $f $px)"; done
   for p in 3,0.5 5,0.4 5,0.5 8,0.4 2,0.4; do RUNS="$RUNS qgis_smooth:$p"; done
   for p in 3,0.25 3,0.35 5,0.25 5,0.35; do RUNS="$RUNS grass_sliding_averaging:$p"; done
   for f in 1.5 2 3; do RUNS="$RUNS grass_chaiken:$(mul $f $px)"; done

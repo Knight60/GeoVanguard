@@ -18,7 +18,7 @@ All paths and programs are set in `config.sh`; override any of them in the envir
 | `PYW`, `PYW_PATH` | a Python with `psutil` for `memwrap.py` / `cpuwrap.py` |
 | `FT_RASTER`, `GREEN_SHP` | source maps, only to rebuild `data/` and `iou/` |
 
-Mapshaper runs through `npx.cmd -y mapshaper` (Node.js). The Python scripts read `GV_BENCH` too;
+Mapshaper runs through `npx.cmd -y mapshaper@0.7.83` (Node.js). The Python scripts read `GV_BENCH` too;
 `make_figs.py` writes to `<repo>/manuscript/figures`. Run the shell scripts with Git Bash.
 
 To start from the Zenodo archive, unpack `inputs.zip` into `$GV_BENCH` (it holds `data/` and `iou/`)
@@ -42,6 +42,13 @@ metrics; `MEM=1` measures peak memory, `CPU=1` the cores used; `LIMIT` is the ti
 Runners: `run_qgis_env.py` (GeoVanguard, QGIS Smooth; `GV_PROGRESS=<file>` logs GeoVanguard's own
 progress and ETA), `run_grass.py`, `run_arcgis.py`, Mapshaper inside `run_one.sh`.
 Software versions: `versions_q.py` (QGIS, GDAL, GEOS), `versions_a.py` (ArcGIS Pro).
+
+## Results kept in the repository
+
+`results/tune.csv` is the complete tuning table behind Table 1 and Fig. 4a (mIoU of every tool and parameter on the
+tuning sets A), and `results/best.json` the best parameter per tool. The Zenodo archive holds `logs/tune.log`, which
+covers the first pass only; GeoVanguard σ of 0.25 and 0.35 px were run separately on 2026-10-11 and are in
+`tune.csv` (now also in `tune_extra.sh`).
 
 ## Metrics
 

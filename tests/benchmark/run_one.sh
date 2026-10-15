@@ -26,7 +26,7 @@ case $TOOL in
     P=${TOOL#mapshaper}; P=${P#:}; P=${P:-10}
     rm -f "$O/${DS}_${TN}.shp"
     S0=$(date +%s.%N)
-    R=$(timeout $LIMIT "${W[@]}" npx.cmd -y mapshaper "$D/$DS.shp" -simplify interval=$P keep-shapes -o "$O/${DS}_${TN}.shp" force 2>&1)
+    R=$(timeout $LIMIT "${W[@]}" npx.cmd -y mapshaper@0.7.83 "$D/$DS.shp" -simplify interval=$P keep-shapes -o "$O/${DS}_${TN}.shp" force 2>&1)
     S1=$(date +%s.%N)
     R="$R
 RESULT $TOOL $(python -c "print('%.2f' % ($S1 - $S0))")"

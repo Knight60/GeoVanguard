@@ -1,0 +1,122 @@
+{
+ "ft_multi": {
+  "arc_sharededges": {
+   "param": "90",
+   "mIoU_A": 0.7824
+  },
+  "arc_smoothpolygon": {
+   "param": "90",
+   "mIoU_A": 0.78437
+  },
+  "grass_chaiken": {
+   "param": "30",
+   "mIoU_A": 0.76997
+  },
+  "grass_sliding_averaging": {
+   "param": "5,0.25",
+   "mIoU_A": 0.75848
+  },
+  "gv_gaussian": {
+   "param": "15",
+   "mIoU_A": 0.78037
+  },
+  "mapshaper": {
+   "param": "6",
+   "mIoU_A": 0.76551
+  },
+  "qgis_smooth": {
+   "param": "1,0.25",
+   "mIoU_A": 0.77129
+  }
+ },
+ "ga_single": {
+  "arc_sharededges": {
+   "param": "60",
+   "mIoU_A": 0.93023
+  },
+  "arc_smoothpolygon": {
+   "param": "60",
+   "mIoU_A": 0.93017
+  },
+  "grass_chaiken": {
+   "param": "30",
+   "mIoU_A": 0.92908
+  },
+  "grass_sliding_averaging": {
+   "param": "3,0.25",
+   "mIoU_A": 0.92486
+  },
+  "gv_gaussian": {
+   "param": "22.5",
+   "mIoU_A": 0.93003
+  },
+  "mapshaper": {
+   "param": "6",
+   "mIoU_A": 0.92511
+  },
+  "qgis_smooth": {
+   "param": "3,0.25",
+   "mIoU_A": 0.92779
+  }
+ },
+ "syn_multi": {
+  "arc_sharededges": {
+   "param": "75",
+   "mIoU_A": 0.97972
+  },
+  "arc_smoothpolygon": {
+   "param": "75",
+   "mIoU_A": 0.97971
+  },
+  "grass_chaiken": {
+   "param": "30",
+   "mIoU_A": 0.97716
+  },
+  "grass_sliding_averaging": {
+   "param": "3,0.5",
+   "mIoU_A": 0.97091
+  },
+  "gv_gaussian": {
+   "param": "15",
+   "mIoU_A": 0.97842
+  },
+  "mapshaper": {
+   "param": "2",
+   "mIoU_A": 0.9556
+  },
+  "qgis_smooth": {
+   "param": "3,0.5",
+   "mIoU_A": 0.97493
+  }
+ },
+ "syn_single": {
+  "arc_sharededges": {
+   "param": "50",
+   "mIoU_A": 0.97814
+  },
+  "arc_smoothpolygon": {
+   "param": "50",
+   "mIoU_A": 0.97814
+  },
+  "grass_chaiken": {
+   "param": "20",
+   "mIoU_A": 0.97573
+  },
+  "grass_sliding_averaging": {
+   "param": "3,0.5",
+   "mIoU_A": 0.96945
+  },
+  "gv_gaussian": {
+   "param": "12.5",
+   "mIoU_A": 0.9769
+  },
+  "mapshaper": {
+   "param": "2",
+   "mIoU_A": 0.96082
+  },
+  "qgis_smooth": {
+   "param": "2,0.4",
+   "mIoU_A": 0.97299
+  }
+ }
+}
